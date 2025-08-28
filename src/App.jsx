@@ -111,8 +111,7 @@ function JamJamGame() {
           level: gameState.level,
           tilesHit: gameState.score,
           trackId: gameState.selectedTrack.id,
-          finalScore: gameState.score,
-          playerAddress: walletAddress
+          finalScore: gameState.score
         };
         
         await submitScore(gameState.score, 1, gameData);

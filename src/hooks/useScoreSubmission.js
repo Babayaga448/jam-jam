@@ -1,4 +1,4 @@
-// src/hooks/useScoreSubmission.js
+// src/hooks/useScoreSubmission.js - Simplified version for development
 import { useState } from 'react';
 
 export const useScoreSubmission = () => {
@@ -9,27 +9,13 @@ export const useScoreSubmission = () => {
     setSubmitting(true);
     
     try {
-      const response = await fetch('/.netlify/functions/submit-score', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerAddress: gameData.playerAddress || 'NEED_PLAYER_ADDRESS',
-          score,
-          transactions: transactionCount
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        const submission = {
-          hash: result.hash,
+      // In development, just simulate the submission
+      if (import.meta.env.DEV) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const mockSubmission = {
+          hash: `0xmock-${Date.now()}`,
           score,
           transactionCount,
           gameData,
@@ -37,17 +23,19 @@ export const useScoreSubmission = () => {
           status: 'success'
         };
         
-        setLastSubmission(submission);
-        console.log('Score submitted successfully:', submission);
+        setLastSubmission(mockSubmission);
+        console.log('Mock Score Submission:', mockSubmission);
         
         return {
           success: true,
-          hash: result.hash,
-          submission
+          hash: mockSubmission.hash,
+          submission: mockSubmission
         };
-      } else {
-        throw new Error(result.error || 'Score submission failed');
       }
+      
+      // Production implementation would go here
+      // This would call your backend API to submit the score
+      throw new Error('Production score submission not implemented yet');
       
     } catch (error) {
       console.error('Score submission failed:', error);

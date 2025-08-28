@@ -1,7 +1,8 @@
-// src/hooks/useMonadGamesID.js
+// src/hooks/useMonadGamesID.js - Add development mode simulation
 import { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 
+const MONAD_GAMES_ID_PROVIDER_APP_ID = 'cmd8euall0037le0my79qpz42';
 const USERNAME_API_URL = 'https://monad-games-id-site.vercel.app/api/check-wallet';
 const REGISTER_USERNAME_URL = 'https://monad-games-id-site.vercel.app/';
 
@@ -13,21 +14,39 @@ export const useMonadGamesID = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Extract wallet address from any Privy account
+  // Development mode simulation
+  const isDevelopment = import.meta.env.DEV;
+
   useEffect(() => {
     if (authenticated && user && ready) {
-      // Try embedded wallet first, then linked accounts
-      const address = user.wallet?.address || 
-                     (user.linkedAccounts && user.linkedAccounts[0] && user.linkedAccounts[0].address);
-      
-      if (address) {
-        setAccountAddress(address);
+      if (isDevelopment) {
+        // Development mode - simulate Monad Games ID account
+        setAccountAddress('0x1234567890abcdef1234567890abcdef12345678');
+        setUsername('DevPlayer');
+        setHasUsername(true);
         setError(null);
+        return;
+      }
+
+      // Production mode - real cross-app logic
+      if (user.linkedAccounts && user.linkedAccounts.length > 0) {
+        const crossAppAccount = user.linkedAccounts.find(
+          account => 
+            account.type === "cross_app" && 
+            account.providerApp.id === MONAD_GAMES_ID_PROVIDER_APP_ID
+        );
+
+        if (crossAppAccount && crossAppAccount.embeddedWallets.length > 0) {
+          const address = crossAppAccount.embeddedWallets[0].address;
+          setAccountAddress(address);
+          setError(null);
+        } else {
+          setError("You need to link your Monad Games ID account to continue.");
+        }
       } else {
-        setError("No wallet found. Please connect a wallet.");
+        setError("You need to link your Monad Games ID account to continue.");
       }
     } else {
-      // Clear data when not authenticated
       setAccountAddress('');
       setUsername(null);
       setHasUsername(false);
@@ -35,13 +54,11 @@ export const useMonadGamesID = () => {
         setError(null);
       }
     }
-  }, [authenticated, user, ready]);
+  }, [authenticated, user, ready, isDevelopment]);
 
-  // Fetch username when address is available
+  // Skip username API call in development
   useEffect(() => {
-    if (!accountAddress) {
-      setUsername(null);
-      setHasUsername(false);
+    if (isDevelopment || !accountAddress) {
       setIsLoading(false);
       return;
     }
@@ -76,7 +93,7 @@ export const useMonadGamesID = () => {
     };
 
     fetchUserData();
-  }, [accountAddress]);
+  }, [accountAddress, isDevelopment]);
 
   const handleLogin = async () => {
     try {
@@ -103,9 +120,9 @@ export const useMonadGamesID = () => {
 
   return {
     isAuthenticated: authenticated && ready && !!accountAddress && hasUsername,
-    username,
+    username: isDevelopment ? 'Babayaga' : username,
     walletAddress: accountAddress,
-    hasUsername,
+    hasUsername: isDevelopment ? true : hasUsername,
     loading: !ready || isLoading,
     error,
     login: handleLogin,
